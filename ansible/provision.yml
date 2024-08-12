@@ -1,0 +1,70 @@
+---
+- name: PXE up
+  hosts: pxeserver
+  become: yes
+  tasks:
+    - name: Install apache2 and dnsmasq
+      ansible.builtin.apt:
+        update_cache: yes
+        pkg:
+          - apache2
+          - dnsmasq
+
+    - name: Add dir
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - '/srv/ks'
+        - '/srv/tftp'
+        - '/srv/images/'
+      
+    - name: Disabled ufw
+      service:
+        name: ufw
+        state: stopped
+        enabled: false
+        
+#    - name: Download noble-live iso
+#      ansible.builtin.get_url:
+#        url: http://cdimage.ubuntu.com/ubuntu-server/noble/daily-live/current/noble-live-server-amd64.iso
+#        dest: /srv/images/
+#        mode: '0755'
+#        force: false
+
+    - name: Unpacking noble-netboot Source
+      unarchive:
+        src: "http://cdimage.ubuntu.com/ubuntu-server/noble/daily-live/current/noble-netboot-amd64.tar.gz"
+        dest: /srv/tftp/
+        remote_src: yes
+            
+    - name: Copy config file
+      copy:
+        src: 'config/{{ item.src }}'
+        dest: '{{ item.dest }}'
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - { src: noble-live-server-amd64.iso, dest: /srv/images/noble-live-server-amd64.iso}
+        - { src: pxe.conf, dest: /etc/dnsmasq.d/pxe.conf }
+        - { src: pxelinux_default, dest: /srv/tftp/amd64/pxelinux.cfg/default }
+        - { src: ks-server.conf, dest: /etc/apache2/sites-available/ks-server.conf }
+        - { src: ks_user-data, dest: /srv/ks/user-data }
+        - { src: ks_meta-data, dest: /srv/ks/meta-data }
+    
+    - name: Enable ks-server site
+      shell: /usr/sbin/a2ensite ks-server.conf
+    
+    - name: Reload dnsmasq
+      service:
+        name: dnsmasq
+        state: reloaded
+            
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
