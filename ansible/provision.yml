@@ -28,12 +28,12 @@
         state: stopped
         enabled: false
         
-#    - name: Download noble-live iso
-#      ansible.builtin.get_url:
-#        url: http://cdimage.ubuntu.com/ubuntu-server/noble/daily-live/current/noble-live-server-amd64.iso
-#        dest: /srv/images/
-#        mode: '0755'
-#        force: false
+    - name: Download noble-live iso
+      ansible.builtin.get_url:
+        url: http://cdimage.ubuntu.com/ubuntu-server/noble/daily-live/current/noble-live-server-amd64.iso
+        dest: /srv/images/
+        mode: '0755'
+        force: false
 
     - name: Unpacking noble-netboot Source
       unarchive:
@@ -49,7 +49,6 @@
         group: root
         mode: '0644'
       loop:
-        - { src: noble-live-server-amd64.iso, dest: /srv/images/noble-live-server-amd64.iso}
         - { src: pxe.conf, dest: /etc/dnsmasq.d/pxe.conf }
         - { src: pxelinux_default, dest: /srv/tftp/amd64/pxelinux.cfg/default }
         - { src: ks-server.conf, dest: /etc/apache2/sites-available/ks-server.conf }
